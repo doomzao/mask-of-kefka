@@ -145,7 +145,12 @@ internal sealed unsafe class OutputRenderer : IDisposable
             ID3D11RenderTargetView* nullRtv = null;
             context->OMSetRenderTargets(1, &nullRtv, null);
 
-            ThrowIfFailed(swapChain->Present(0, allowTearing ? DXGI.DXGI_PRESENT_ALLOW_TEARING : 0), "Present");
+            // DO_NOT_WAIT: if the present queue is full, skip this frame instead of blocking.
+            // We present inside the game's frame; any block here stalls the game itself.
+            var presentFlags = DXGI.DXGI_PRESENT_DO_NOT_WAIT | (allowTearing ? DXGI.DXGI_PRESENT_ALLOW_TEARING : 0);
+            var presentHr = swapChain->Present(0, presentFlags);
+            if (presentHr != DXGI.DXGI_ERROR_WAS_STILL_DRAWING)
+                ThrowIfFailed(presentHr, "Present");
         }
         finally
         {
@@ -282,7 +287,7 @@ internal sealed unsafe class OutputRenderer : IDisposable
                 Format = DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM,
                 SampleDesc = new DXGI_SAMPLE_DESC { Count = 1 },
                 BufferUsage = DXGI.DXGI_USAGE_RENDER_TARGET_OUTPUT,
-                BufferCount = 2,
+                BufferCount = 3,
                 SwapEffect = DXGI_SWAP_EFFECT.DXGI_SWAP_EFFECT_FLIP_DISCARD,
                 Scaling = DXGI_SCALING.DXGI_SCALING_STRETCH,
                 AlphaMode = DXGI_ALPHA_MODE.DXGI_ALPHA_MODE_IGNORE,
