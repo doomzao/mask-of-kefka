@@ -1,0 +1,10 @@
+{
+  "Name": "Mask of Kefka",
+  "Author": "doomzao",
+  "Punchline": "Stream o jogo sem mostrar os overlays do Dalamud.",
+  "Description": "Cria uma segunda janela com a imagem limpa do jogo (sem ImGui/Dalamud) para captura no OBS. Opcionalmente, mostra a cena sem a UI do jogo.",
+  "InternalName": "MaskOfKefka",
+  "ApplicableVersion": "any",
+  "Tags": [ "streaming", "obs", "utility" ],
+  "RepoUrl": "https://github.com/doomzao/mask-of-kefka"
+}
