@@ -53,7 +53,23 @@ Tips:
 
 ## Installing
 
-Requirements: XIVLauncher with Dalamud, and the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) to build.
+Requirements: [XIVLauncher](https://goatcorp.github.io/) with Dalamud enabled.
+
+1. In game, type `/xlsettings` and open the **Experimental** tab.
+2. Under **Custom Plugin Repositories**, paste the URL below into an empty box:
+
+   ```
+   https://raw.githubusercontent.com/doomzao/plugins/main/repo.json
+   ```
+
+3. Click the **+** button on the right, then the **save** button at the bottom right.
+4. Open `/xlplugins`, search for **Mask of Kefka** (or "streamer mode") and install it.
+
+That repository URL covers all my plugins: add it once and future plugins appear in the installer automatically.
+
+### Building from source
+
+Requires the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0).
 
 ```powershell
 dotnet build -c Release
