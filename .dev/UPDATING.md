@@ -2,6 +2,8 @@
 
 Maintainer notes. Users do not need anything in this folder.
 
+This file covers **fixing the plugin** when the game or Dalamud changes. For **shipping a release to users** (version bump, GitHub release, repo.json), see `.dev/RELEASING.md` in the [doomzao/plugins](https://github.com/doomzao/plugins) repository.
+
 This plugin was designed to break as little as possible, but FFXIV plus Dalamud is a moving target. This guide lists **everything** the plugin depends on, **where** each dependency lives in the code, and **how** to find it again when it breaks.
 
 ## TL;DR: what to do after each patch
