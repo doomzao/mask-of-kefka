@@ -27,6 +27,9 @@ public sealed class Plugin : IDalamudPlugin
 
     public bool OutputActive => session is { WindowClosed: false };
 
+    /// <summary>Minimizes the output window (the recommended state while streaming).</summary>
+    public void MinimizeOutput() => session?.MinimizeWindow();
+
     private readonly WindowSystem windowSystem = new("MaskOfKefka");
     private readonly ConfigWindow configWindow;
 

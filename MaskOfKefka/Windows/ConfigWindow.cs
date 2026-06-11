@@ -29,6 +29,15 @@ public class ConfigWindow : Window
             plugin.OutputRequested = active;
         ImGui.TextDisabled("In OBS, use 'Window Capture' (Windows 10 method) on the \"Mask of Kefka\" window.");
 
+        ImGui.TextColored(new Vector4(1f, 0.75f, 0.25f, 1f), "Performance: keep the output window MINIMIZED while streaming.");
+        ImGui.TextWrapped(
+            "A visible output window can cost a lot of game fps (Windows composes it every frame). " +
+            "Set up your capture, then minimize the window: the cost drops to zero and, on current " +
+            "Windows 11, OBS/Discord keep capturing it normally. If your capture freezes while " +
+            "minimized (older Windows), keep the window small instead.");
+        if (plugin.OutputActive && ImGui.Button("Minimize output window"))
+            plugin.MinimizeOutput();
+
         ImGui.Separator();
 
         var showUi = config.ShowGameUi;
@@ -82,6 +91,13 @@ public class ConfigWindow : Window
             : $"Game at 60 fps -> output at {60 / config.RenderEveryNthFrame} fps. Output GPU cost drops proportionally.");
 
         ImGui.Separator();
+
+        var startMinimized = config.StartMinimized;
+        if (ImGui.Checkbox("Open the output window minimized (recommended)", ref startMinimized))
+        {
+            config.StartMinimized = startMinimized;
+            config.Save();
+        }
 
         var autoStart = config.AutoStart;
         if (ImGui.Checkbox("Open the output window when the plugin loads", ref autoStart))

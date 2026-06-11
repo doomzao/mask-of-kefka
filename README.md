@@ -45,10 +45,13 @@ Before going live, open the output window and check what your specific plugin se
 1. Enable the output window (`/kefka on`).
 2. In OBS, add a **Window Capture** source and select the `Mask of Kefka` window.
 3. Use the **Windows 10 (1903 and up)** capture method (Windows Graphics Capture).
+4. **Minimize the Mask of Kefka window** once the capture is set up (there is a button for it in `/kefka`).
+
+Step 4 matters: while the output window is visible, Windows composes it every frame and the game can lose a significant amount of fps (the game window may also drop out of its optimized fullscreen presentation). Minimized, the cost is virtually zero. On current Windows 11 the capture keeps updating normally while the window is minimized; if your capture freezes instead (older Windows builds), keep the window visible but small and consider the output rate limiter in `/kefka`.
 
 Do not use Game Capture: it hooks the game process and captures the main window, overlays included.
 
-The same applies to Discord screen sharing and similar tools: share the `Mask of Kefka` window, not the game. Keep the window unminimized (it can sit behind other windows).
+The same applies to Discord screen sharing and similar tools: share the `Mask of Kefka` window, not the game, and minimize it after picking it (do a quick test on your setup first).
 
 Tips:
 
@@ -92,7 +95,7 @@ Then, in game:
 - **Game or Dalamud updates can break the plugin entirely** (it stops loading or compiling) until it is updated. This is true for every Dalamud plugin.
 - **Hardware cursor is not captured.** Enable the software cursor in the game settings if you want the cursor on stream.
 - **Audio is not part of the window.** Capture the game audio in OBS as usual (desktop or application audio); the output window only carries video.
-- **Minimizing the output window freezes the capture** on the last frame. Keep it open; it can sit behind other windows.
+- **A visible output window can cost game fps.** Minimize it while streaming (see Capturing in OBS). On older Windows builds the capture may freeze while minimized; in that case keep the window small and visible instead.
 - **OBS Game Capture does not work for this**; it hooks the game and captures the main window, overlays included. Use Window Capture on the output window.
 - **Failure behavior**: if rendering fails repeatedly (for example after a video device reset), the plugin logs the error and shuts the output down instead of crashing the game. Reopen it with `/kefka on`.
 - This plugin is young and has not been battle-tested across every setup (multi-monitor DPI mixes, HDR, exotic drivers). If something looks wrong, open an issue with your setup details.

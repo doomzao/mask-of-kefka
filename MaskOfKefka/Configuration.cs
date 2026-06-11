@@ -29,5 +29,12 @@ public class Configuration : IPluginConfiguration
     /// <summary>Borderless output window, no title bar (for a clean stream capture).</summary>
     public bool Borderless { get; set; } = false;
 
+    /// <summary>
+    /// Open the output window minimized. Recommended: a visible output window can cost a
+    /// lot of game fps (DWM composition); minimized it costs nothing and capture keeps
+    /// working on current Windows 11.
+    /// </summary>
+    public bool StartMinimized { get; set; } = false;
+
     public void Save() => Plugin.PluginInterface.SavePluginConfig(this);
 }

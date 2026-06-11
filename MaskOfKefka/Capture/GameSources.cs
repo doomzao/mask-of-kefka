@@ -43,11 +43,10 @@ internal static unsafe class GameSources
         return true;
     }
 
-    /// <summary>Arbitrary game render target ("no UI" mode). Only usable when it has an SRV.</summary>
-    internal static bool TryGetRenderTarget(int index, out ID3D11Texture2D* texture, out ID3D11ShaderResourceView* srv)
+    /// <summary>Arbitrary game render target ("no UI" mode).</summary>
+    internal static bool TryGetRenderTarget(int index, out ID3D11Texture2D* texture)
     {
         texture = null;
-        srv = null;
 
         if (index < 0 || index >= RenderTargetSlotCount)
             return false;
@@ -62,8 +61,7 @@ internal static unsafe class GameSources
             return false;
 
         texture = (ID3D11Texture2D*)t->D3D11Texture2D;
-        srv = (ID3D11ShaderResourceView*)t->D3D11ShaderResourceView;
-        return srv != null;
+        return true;
     }
 
     /// <summary>Maintenance tool: lists the plausible slots to the log to find the scene index.</summary>
