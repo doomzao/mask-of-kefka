@@ -6,5 +6,6 @@
   "InternalName": "MaskOfKefka",
   "ApplicableVersion": "any",
   "Tags": [ "streamer mode", "stream mode", "streamer", "streaming", "stream", "obs", "overlay", "hide", "utility" ],
-  "RepoUrl": "https://github.com/doomzao/mask-of-kefka"
+  "RepoUrl": "https://github.com/doomzao/mask-of-kefka",
+  "IconUrl": "https://raw.githubusercontent.com/doomzao/mask-of-kefka/main/images/icon.png"
 }
