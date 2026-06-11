@@ -9,17 +9,17 @@ using static TerraFX.Interop.Windows.Windows;
 namespace MaskOfKefka.Output;
 
 /// <summary>
-/// Desenha uma textura do jogo na janela de saída. Roda sempre na thread de render do jogo
-/// (dentro do UiBuilder.Draw), usando o próprio device D3D11 do jogo — por isso não há
-/// texturas compartilhadas nem processo separado.
+/// Draws a game texture into the output window. Always runs on the game's render thread
+/// (inside UiBuilder.Draw), using the game's own D3D11 device, which is why there are no
+/// shared textures and no separate process.
 ///
-/// Todo o estado do pipeline fica isolado num ID3DDeviceContextState próprio: o estado do
-/// jogo e o do ImGui ficam intactos.
+/// All pipeline state is isolated in a dedicated ID3DDeviceContextState: the game's state
+/// and ImGui's state are left untouched.
 /// </summary>
 internal sealed unsafe class OutputRenderer : IDisposable
 {
-    // Triângulo fullscreen gerado por SV_VertexID (sem vertex buffer nem input layout).
-    // Alpha forçado em 1 pra captura no OBS não sair translúcida.
+    // Fullscreen triangle generated from SV_VertexID (no vertex buffer, no input layout).
+    // Alpha is forced to 1 so the OBS capture does not come out translucent.
     private const string ShaderSource = """
         struct VSOut { float4 pos : SV_Position; float2 uv : TEXCOORD0; };
 
@@ -50,7 +50,7 @@ internal sealed unsafe class OutputRenderer : IDisposable
     private ID3D11PixelShader* pixelShader;
     private ID3D11SamplerState* sampler;
 
-    // Cópia intermediária pro caso do backbuffer (que não tem bind de shader resource).
+    // Intermediate copy for the backbuffer case (it has no shader resource bind flag).
     private ID3D11Texture2D* copyTex;
     private ID3D11ShaderResourceView* copySrv;
     private D3D11_TEXTURE2D_DESC copyDesc;
@@ -64,7 +64,7 @@ internal sealed unsafe class OutputRenderer : IDisposable
     public void Initialize(ID3D11Device* gameDevice, ID3D11DeviceContext* gameContext, HWND windowHandle)
     {
         if (gameDevice == null || gameContext == null)
-            throw new InvalidOperationException("Device/contexto D3D11 do jogo indisponíveis.");
+            throw new InvalidOperationException("Game D3D11 device/context unavailable.");
 
         device = gameDevice;
         hwnd = windowHandle;
@@ -81,8 +81,9 @@ internal sealed unsafe class OutputRenderer : IDisposable
     }
 
     /// <summary>
-    /// Copia/desenha a textura na janela. Se <paramref name="sourceSrv"/> for nula, a textura
-    /// é copiada pra uma intermediária com bind de shader resource (caminho do backbuffer).
+    /// Copies/draws the texture into the window. When <paramref name="sourceSrv"/> is null,
+    /// the texture is copied into an intermediate with a shader resource bind flag
+    /// (the backbuffer path).
     /// </summary>
     public void RenderFrame(ID3D11Texture2D* sourceTexture, ID3D11ShaderResourceView* sourceSrv)
     {
@@ -95,7 +96,7 @@ internal sealed unsafe class OutputRenderer : IDisposable
         var width = (uint)(rc.right - rc.left);
         var height = (uint)(rc.bottom - rc.top);
         if (width == 0 || height == 0)
-            return; // minimizada
+            return; // minimized
 
         if (rtv == null || width != swapWidth || height != swapHeight)
             ResizeSwapChain(width, height);
@@ -133,7 +134,7 @@ internal sealed unsafe class OutputRenderer : IDisposable
 
             context->Draw(3, 0);
 
-            // Solta a textura do jogo do pipeline antes de devolver o estado.
+            // Unbind the game's texture from the pipeline before handing the state back.
             ID3D11ShaderResourceView* nullSrv = null;
             context->PSSetShaderResources(0, 1, &nullSrv);
             ID3D11RenderTargetView* nullRtv = null;
@@ -159,7 +160,7 @@ internal sealed unsafe class OutputRenderer : IDisposable
         Release(ref vertexShader);
         Release(ref contextState);
         Release(ref context);
-        device = null; // pertence ao jogo; nunca fizemos AddRef
+        device = null; // owned by the game; we never AddRef'd it
     }
 
     private void CreateContextState()
@@ -222,10 +223,10 @@ internal sealed unsafe class OutputRenderer : IDisposable
             var hr = D3DCompile(pSource, (nuint)source.Length, null, null, null, (sbyte*)pEntry, (sbyte*)pTarget, 0, 0, &code, &errors);
             if (FAILED(hr))
             {
-                var message = errors != null ? Marshal.PtrToStringAnsi((nint)errors->GetBufferPointer()) : "sem detalhes";
+                var message = errors != null ? Marshal.PtrToStringAnsi((nint)errors->GetBufferPointer()) : "no details";
                 if (errors != null)
                     errors->Release();
-                throw new InvalidOperationException($"D3DCompile({entryPoint}) falhou: 0x{(int)hr:X8} — {message}");
+                throw new InvalidOperationException($"D3DCompile({entryPoint}) failed: 0x{(int)hr:X8}, {message}");
             }
 
             if (errors != null)
@@ -262,7 +263,7 @@ internal sealed unsafe class OutputRenderer : IDisposable
 
             var desc = new DXGI_SWAP_CHAIN_DESC1
             {
-                Width = 0, // usa o tamanho atual da área cliente
+                Width = 0, // use the current client area size
                 Height = 0,
                 Format = DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM,
                 SampleDesc = new DXGI_SAMPLE_DESC { Count = 1 },
@@ -276,7 +277,7 @@ internal sealed unsafe class OutputRenderer : IDisposable
             fixed (IDXGISwapChain1** sc = &swapChain)
                 ThrowIfFailed(factory->CreateSwapChainForHwnd((IUnknown*)device, hwnd, &desc, null, null, sc), "CreateSwapChainForHwnd");
 
-            // Alt+Enter na janela de saída não deve tentar fullscreen exclusivo.
+            // Alt+Enter on the output window must not attempt exclusive fullscreen.
             _ = factory->MakeWindowAssociation(hwnd, DXGI.DXGI_MWA_NO_ALT_ENTER);
         }
         finally
@@ -321,9 +322,9 @@ internal sealed unsafe class OutputRenderer : IDisposable
         desc.MiscFlags = 0;
 
         fixed (ID3D11Texture2D** tex = &copyTex)
-            ThrowIfFailed(device->CreateTexture2D(&desc, null, tex), "CreateTexture2D (cópia)");
+            ThrowIfFailed(device->CreateTexture2D(&desc, null, tex), "CreateTexture2D (copy)");
         fixed (ID3D11ShaderResourceView** view = &copySrv)
-            ThrowIfFailed(device->CreateShaderResourceView((ID3D11Resource*)copyTex, null, view), "CreateShaderResourceView (cópia)");
+            ThrowIfFailed(device->CreateShaderResourceView((ID3D11Resource*)copyTex, null, view), "CreateShaderResourceView (copy)");
 
         copyDesc = desc;
     }
@@ -347,6 +348,6 @@ internal sealed unsafe class OutputRenderer : IDisposable
     private static void ThrowIfFailed(HRESULT hr, string what)
     {
         if (FAILED(hr))
-            throw new InvalidOperationException($"{what} falhou: 0x{(int)hr:X8}");
+            throw new InvalidOperationException($"{what} failed: 0x{(int)hr:X8}");
     }
 }

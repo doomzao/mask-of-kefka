@@ -6,28 +6,28 @@ using TerraFX.Interop.DirectX;
 namespace MaskOfKefka.Capture;
 
 /// <summary>
-/// Acesso às texturas do jogo via FFXIVClientStructs. Tudo aqui é dependente de patch:
-/// veja docs/ATUALIZACAO-POS-PATCH.md antes de mexer.
+/// Access to the game's textures via FFXIVClientStructs. Everything here is patch-sensitive:
+/// see .dev/UPDATING.md before touching it.
 /// </summary>
 internal static unsafe class GameSources
 {
     /// <summary>
-    /// Offset onde começa a tabela de ponteiros Texture* dentro do RenderTargetManager
-    /// (logo após o vtable/header, no campo _gBuffers). Confira em
-    /// FFXIVClientStructs/FFXIV/Client/Graphics/Render/RenderTargetManager.cs após cada patch.
+    /// Offset where the Texture* pointer table starts inside RenderTargetManager
+    /// (right after the vtable/header, at the _gBuffers field). Verify it in
+    /// FFXIVClientStructs/FFXIV/Client/Graphics/Render/RenderTargetManager.cs after each patch.
     /// </summary>
     internal const int RenderTargetTableOffset = 0x20;
 
     /// <summary>
-    /// Nem todo slot da tabela é um ponteiro de textura — o fim do struct tem campos de
-    /// resolução e flags. O scan valida cada ponteiro antes de dereferenciar, mas mantemos
-    /// o intervalo dentro do tamanho do struct.
+    /// Not every slot in the table is a texture pointer; the tail of the struct holds
+    /// resolution fields and flags. The scan validates each pointer before dereferencing,
+    /// but the range stays within the struct size.
     /// </summary>
     internal static int RenderTargetSlotCount => (sizeof(RenderTargetManager) - RenderTargetTableOffset) / 8;
 
     internal static Device* GameDevice => Device.Instance();
 
-    /// <summary>Backbuffer do jogo: cena + UI do jogo, ainda sem ImGui/Dalamud.</summary>
+    /// <summary>Game backbuffer: scene + game UI, still without ImGui/Dalamud.</summary>
     internal static bool TryGetBackBuffer(out ID3D11Texture2D* texture)
     {
         texture = null;
@@ -43,7 +43,7 @@ internal static unsafe class GameSources
         return true;
     }
 
-    /// <summary>Render target arbitrária do jogo (modo "sem UI"). Só serve se tiver SRV.</summary>
+    /// <summary>Arbitrary game render target ("no UI" mode). Only usable when it has an SRV.</summary>
     internal static bool TryGetRenderTarget(int index, out ID3D11Texture2D* texture, out ID3D11ShaderResourceView* srv)
     {
         texture = null;
@@ -66,17 +66,17 @@ internal static unsafe class GameSources
         return srv != null;
     }
 
-    /// <summary>Ferramenta de manutenção: lista os slots plausíveis no log pra achar o índice da cena.</summary>
+    /// <summary>Maintenance tool: lists the plausible slots to the log to find the scene index.</summary>
     internal static void DumpRenderTargets(IPluginLog log)
     {
         var rtm = RenderTargetManager.Instance();
         if (rtm == null)
         {
-            log.Warning("RenderTargetManager indisponível.");
+            log.Warning("RenderTargetManager unavailable.");
             return;
         }
 
-        log.Information($"RenderTargetManager @ {(nuint)rtm:X}, {RenderTargetSlotCount} slots a partir de +0x{RenderTargetTableOffset:X}:");
+        log.Information($"RenderTargetManager @ {(nuint)rtm:X}, {RenderTargetSlotCount} slots starting at +0x{RenderTargetTableOffset:X}:");
         var slots = (Texture**)((byte*)rtm + RenderTargetTableOffset);
         for (var i = 0; i < RenderTargetSlotCount; i++)
         {
@@ -86,13 +86,13 @@ internal static unsafe class GameSources
             if (t->ActualWidth == 0 || t->ActualWidth > 16384 || t->ActualHeight == 0 || t->ActualHeight > 16384)
                 continue;
 
-            log.Information($"  [{i,3}] {t->ActualWidth}x{t->ActualHeight} fmt={t->TextureFormat} srv={(t->D3D11ShaderResourceView != null ? "sim" : "nao")}");
+            log.Information($"  [{i,3}] {t->ActualWidth}x{t->ActualHeight} fmt={t->TextureFormat} srv={(t->D3D11ShaderResourceView != null ? "yes" : "no")}");
         }
     }
 
     /// <summary>
-    /// A tabela contém slots que não são ponteiros (ints, flags). Antes de dereferenciar,
-    /// exige endereço canônico de user-space alinhado a 8 — evita access violation.
+    /// The table mixes pointers with scalar fields (ints, flags). Before dereferencing,
+    /// require a canonical, 8-aligned user-space address to avoid access violations.
     /// </summary>
     private static bool LooksLikePointer(void* p)
         => p != null && ((nuint)p & 0x7) == 0 && (nuint)p > 0x10000 && (nuint)p < 0x7FFF_FFFF_0000;

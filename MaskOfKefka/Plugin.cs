@@ -20,8 +20,8 @@ public sealed class Plugin : IDalamudPlugin
     public Configuration Config { get; }
 
     /// <summary>
-    /// Estado desejado da janela de saída. A criação/destruição real acontece no OnDraw
-    /// (thread de render), então qualquer thread pode setar isso sem lock.
+    /// Desired state of the output window. The actual creation/destruction happens in OnDraw
+    /// (render thread), so any thread can set this without a lock.
     /// </summary>
     public bool OutputRequested { get; set; }
 
@@ -42,11 +42,11 @@ public sealed class Plugin : IDalamudPlugin
 
         CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
-            HelpMessage = "Abre o Mask of Kefka. Subcomandos: on, off, ui.",
+            HelpMessage = "Opens Mask of Kefka. Subcommands: on, off, ui.",
         });
 
-        // A saída precisa continuar atualizando mesmo quando o Dalamud esconde a UI
-        // (cutscenes, gpose, UI do jogo oculta) — senão a stream congela.
+        // The output must keep updating even while Dalamud hides its UI
+        // (cutscenes, gpose, hidden game UI), otherwise the stream freezes.
         PluginInterface.UiBuilder.DisableAutomaticUiHide = true;
         PluginInterface.UiBuilder.DisableUserUiHide = true;
         PluginInterface.UiBuilder.DisableCutsceneUiHide = true;
@@ -68,7 +68,7 @@ public sealed class Plugin : IDalamudPlugin
         CommandManager.RemoveHandler(CommandName);
         windowSystem.RemoveAllWindows();
 
-        // O Draw já foi desinscrito, então ninguém mais usa a sessão.
+        // Draw is already unsubscribed, so nothing else is using the session.
         session?.Dispose();
         session = null;
     }
@@ -94,8 +94,8 @@ public sealed class Plugin : IDalamudPlugin
     }
 
     /// <summary>
-    /// Roda na thread de render, dentro do present do jogo — o único lugar seguro pra
-    /// mexer no device D3D11 sem sincronização extra.
+    /// Runs on the render thread, inside the game's present: the only safe place to touch
+    /// the D3D11 device without extra synchronization.
     /// </summary>
     private void OnDraw()
     {
@@ -112,7 +112,7 @@ public sealed class Plugin : IDalamudPlugin
             }
             catch (Exception e)
             {
-                Log.Error(e, "Falha ao abrir a janela de saída.");
+                Log.Error(e, "Failed to open the output window.");
                 OutputRequested = false;
                 return;
             }
@@ -136,7 +136,7 @@ public sealed class Plugin : IDalamudPlugin
         {
             if (++consecutiveRenderErrors >= 10)
             {
-                Log.Error(e, "Erros consecutivos demais renderizando a saída; desligando.");
+                Log.Error(e, "Too many consecutive errors rendering the output; shutting it down.");
                 OutputRequested = false;
             }
         }

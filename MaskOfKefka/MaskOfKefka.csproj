@@ -1,14 +1,14 @@
 <Project Sdk="Dalamud.NET.Sdk/15.0.0">
   <PropertyGroup>
     <Version>0.1.0.0</Version>
-    <Description>Espelha o jogo numa janela limpa, sem overlays do Dalamud, para captura no OBS.</Description>
+    <Description>Mirrors the game into a clean window, free of Dalamud overlays, for OBS capture.</Description>
     <PackageProjectUrl>https://github.com/doomzao/mask-of-kefka</PackageProjectUrl>
     <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Distribuída junto com o Dalamud; não precisa de pacote NuGet nem ir pro zip. -->
+    <!-- Shipped with Dalamud itself; no NuGet package needed and it must not go into the zip. -->
     <Reference Include="TerraFX.Interop.Windows">
       <HintPath>$(DalamudLibPath)TerraFX.Interop.Windows.dll</HintPath>
       <Private>false</Private>

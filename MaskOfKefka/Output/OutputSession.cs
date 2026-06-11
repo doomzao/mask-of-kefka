@@ -6,8 +6,8 @@ using TerraFX.Interop.DirectX;
 namespace MaskOfKefka.Output;
 
 /// <summary>
-/// Uma "sessão" de saída: a janela + o renderer. Criada e destruída exclusivamente na
-/// thread de render (dentro do UiBuilder.Draw), o que dispensa locks no caminho quente.
+/// One output "session": the window plus the renderer. Created and destroyed exclusively on
+/// the render thread (inside UiBuilder.Draw), which removes the need for locks on the hot path.
 /// </summary>
 internal sealed unsafe class OutputSession : IDisposable
 {
@@ -19,18 +19,18 @@ internal sealed unsafe class OutputSession : IDisposable
     {
     }
 
-    /// <summary>Usuário fechou a janela no X (ou a thread dela morreu).</summary>
+    /// <summary>The user closed the window (or its thread died).</summary>
     public bool WindowClosed => host.Closed;
 
     public static OutputSession Start(IPluginLog log, Configuration config)
     {
         var dev = GameSources.GameDevice;
         if (dev == null || dev->SwapChain == null)
-            throw new InvalidOperationException("Device do jogo indisponível.");
+            throw new InvalidOperationException("Game device unavailable.");
 
         var session = new OutputSession();
         session.host.Start((int)dev->SwapChain->Width, (int)dev->SwapChain->Height, config.Borderless);
-        log.Information("Janela de saída aberta ({Width}x{Height}).", dev->SwapChain->Width, dev->SwapChain->Height);
+        log.Information("Output window opened ({Width}x{Height}).", dev->SwapChain->Width, dev->SwapChain->Height);
         return session;
     }
 
@@ -39,9 +39,9 @@ internal sealed unsafe class OutputSession : IDisposable
         if (!host.Ready || host.Closed)
             return;
 
-        host.SetBorderless(config.Borderless); // no-op se não mudou
+        host.SetBorderless(config.Borderless); // no-op when unchanged
 
-        // Limitador de taxa: pula frames inteiros (cópia, draw e present) pra aliviar a GPU.
+        // Rate limiter: skips whole frames (copy, draw and present) to ease GPU load.
         frameCounter++;
         var interval = Math.Max(1, config.RenderEveryNthFrame);
         if (interval > 1 && frameCounter % (uint)interval != 0)
@@ -61,7 +61,7 @@ internal sealed unsafe class OutputSession : IDisposable
         }
         else if (GameSources.TryGetBackBuffer(out var backBuffer))
         {
-            // Modo padrão (e fallback quando o índice "sem UI" não vale mais após um patch).
+            // Default mode (and fallback when the "no UI" index is stale after a patch).
             renderer.RenderFrame(backBuffer, null);
         }
     }

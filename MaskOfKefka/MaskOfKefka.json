@@ -1,8 +1,8 @@
 {
   "Name": "Mask of Kefka",
   "Author": "doomzao",
-  "Punchline": "Stream o jogo sem mostrar os overlays do Dalamud.",
-  "Description": "Cria uma segunda janela com a imagem limpa do jogo (sem ImGui/Dalamud) para captura no OBS. Opcionalmente, mostra a cena sem a UI do jogo.",
+  "Punchline": "Stream the game without showing Dalamud overlays.",
+  "Description": "Creates a second window with a clean image of the game (no ImGui/Dalamud) for capture in OBS. Optionally shows the scene without the game UI.",
   "InternalName": "MaskOfKefka",
   "ApplicableVersion": "any",
   "Tags": [ "streaming", "obs", "utility" ],

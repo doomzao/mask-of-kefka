@@ -25,14 +25,14 @@ public class ConfigWindow : Window
         var config = plugin.Config;
 
         var active = plugin.OutputRequested;
-        if (ImGui.Checkbox("Janela de saída ativa", ref active))
+        if (ImGui.Checkbox("Output window active", ref active))
             plugin.OutputRequested = active;
-        ImGui.TextDisabled("No OBS, use 'Captura de Janela' (método Windows 10) na janela \"Mask of Kefka\".");
+        ImGui.TextDisabled("In OBS, use 'Window Capture' (Windows 10 method) on the \"Mask of Kefka\" window.");
 
         ImGui.Separator();
 
         var showUi = config.ShowGameUi;
-        if (ImGui.Checkbox("Mostrar a UI do jogo na saída", ref showUi))
+        if (ImGui.Checkbox("Show the game UI in the output", ref showUi))
         {
             config.ShowGameUi = showUi;
             config.Save();
@@ -41,50 +41,50 @@ public class ConfigWindow : Window
         if (!config.ShowGameUi)
         {
             ImGui.TextWrapped(
-                "Modo sem UI: escolha o índice da render target que contém a cena. " +
-                "Esse índice muda a cada patch do jogo — ajuste até a janela de saída mostrar a cena sem UI. " +
-                "Enquanto o índice for inválido, a saída cai no modo com UI.");
+                "No-UI mode: pick the render target index that holds the scene. " +
+                "This index changes with every game patch. Adjust it until the output window shows the scene without UI. " +
+                "While the index is invalid, the output falls back to the UI mode.");
 
             var index = config.RenderTargetIndex;
-            if (ImGui.InputInt("Índice da render target", ref index))
+            if (ImGui.InputInt("Render target index", ref index))
             {
                 config.RenderTargetIndex = Math.Clamp(index, -1, GameSources.RenderTargetSlotCount - 1);
                 config.Save();
             }
 
-            ImGui.TextDisabled($"Intervalo: 0 a {GameSources.RenderTargetSlotCount - 1}. Use -1 para desativar.");
+            ImGui.TextDisabled($"Range: 0 to {GameSources.RenderTargetSlotCount - 1}. Use -1 to disable.");
 
-            if (ImGui.Button("Listar render targets no log"))
+            if (ImGui.Button("List render targets to log"))
                 GameSources.DumpRenderTargets(Plugin.Log);
             ImGui.SameLine();
-            ImGui.TextDisabled("(abra com /xllog)");
+            ImGui.TextDisabled("(open with /xllog)");
         }
 
         ImGui.Separator();
 
         var borderless = config.Borderless;
-        if (ImGui.Checkbox("Janela sem borda (esconde a barra de título)", ref borderless))
+        if (ImGui.Checkbox("Borderless window (hides the title bar)", ref borderless))
         {
             config.Borderless = borderless;
             config.Save();
         }
         if (config.Borderless)
-            ImGui.TextDisabled("Arraste segurando qualquer ponto da janela; redimensione pelas bordas (8px).");
+            ImGui.TextDisabled("Drag from anywhere inside the window; resize from the edges (8px).");
 
         var everyNth = config.RenderEveryNthFrame;
-        if (ImGui.SliderInt("Renderizar 1 frame a cada", ref everyNth, 1, 4))
+        if (ImGui.SliderInt("Render 1 frame every", ref everyNth, 1, 4))
         {
             config.RenderEveryNthFrame = Math.Clamp(everyNth, 1, 4);
             config.Save();
         }
         ImGui.TextDisabled(config.RenderEveryNthFrame == 1
-            ? "Saída na mesma taxa do jogo (custo máximo, fluidez máxima)."
-            : $"Jogo a 60 fps -> saída a {60 / config.RenderEveryNthFrame} fps. Custo de GPU da saída cai na mesma proporção.");
+            ? "Output at the same rate as the game (max cost, max smoothness)."
+            : $"Game at 60 fps -> output at {60 / config.RenderEveryNthFrame} fps. Output GPU cost drops proportionally.");
 
         ImGui.Separator();
 
         var autoStart = config.AutoStart;
-        if (ImGui.Checkbox("Abrir a janela de saída ao carregar o plugin", ref autoStart))
+        if (ImGui.Checkbox("Open the output window when the plugin loads", ref autoStart))
         {
             config.AutoStart = autoStart;
             config.Save();

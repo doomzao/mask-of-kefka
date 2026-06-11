@@ -7,23 +7,23 @@ using static TerraFX.Interop.Windows.Windows;
 namespace MaskOfKefka.Output;
 
 /// <summary>
-/// Janela Win32 nativa em thread própria (message pump dedicado). É essa janela que o OBS
-/// captura. O D3D nunca roda aqui — só mensagens; quem desenha é o OutputRenderer, na
-/// thread de render do jogo.
+/// Native Win32 window on its own thread (dedicated message pump). This is the window OBS
+/// captures. No D3D ever runs here, only messages; drawing is done by OutputRenderer on the
+/// game's render thread.
 /// </summary>
 internal sealed unsafe class OutputWindowHost : IDisposable
 {
     private const string WindowClassName = "MaskOfKefkaOutput";
     private const string WindowTitle = "Mask of Kefka";
 
-    /// <summary>Mensagem custom: reaplica o estilo da janela (com/sem borda) na thread dona dela.</summary>
+    /// <summary>Custom message: reapplies the window style (bordered/borderless) on the owning thread.</summary>
     private const uint WmApplyStyle = WM.WM_APP + 1;
 
     private const uint BorderedStyle = WS.WS_OVERLAPPEDWINDOW;
     private const uint BorderlessStyle = WS.WS_POPUP | WS.WS_THICKFRAME | WS.WS_MINIMIZEBOX | WS.WS_MAXIMIZEBOX;
 
-    // O WndProc é estático (callback nativo); como só existe uma janela por plugin,
-    // o estado que ele precisa ler fica em estáticos.
+    // WndProc is static (native callback); since there is only one window per plugin,
+    // the state it needs lives in statics.
     private static volatile bool borderless;
 
     private Thread? thread;
@@ -33,16 +33,16 @@ internal sealed unsafe class OutputWindowHost : IDisposable
 
     public HWND Hwnd => (HWND)(void*)hwnd;
 
-    /// <summary>Janela criada e pronta pra receber uma swapchain.</summary>
+    /// <summary>Window created and ready to receive a swapchain.</summary>
     public bool Ready => ready;
 
-    /// <summary>Janela foi fechada (pelo usuário ou erro) e a thread terminou.</summary>
+    /// <summary>Window was closed (by the user or an error) and its thread ended.</summary>
     public bool Closed => closed;
 
     public void Start(int clientWidth, int clientHeight, bool startBorderless)
     {
         if (thread != null)
-            throw new InvalidOperationException("Janela de saída já iniciada.");
+            throw new InvalidOperationException("Output window already started.");
 
         borderless = startBorderless;
         thread = new Thread(() => ThreadMain(clientWidth, clientHeight))
@@ -62,7 +62,7 @@ internal sealed unsafe class OutputWindowHost : IDisposable
         closed = true;
     }
 
-    /// <summary>Troca com/sem borda em runtime. Pode ser chamado de qualquer thread.</summary>
+    /// <summary>Toggles bordered/borderless at runtime. Safe to call from any thread.</summary>
     public void SetBorderless(bool value)
     {
         if (borderless == value)
@@ -93,7 +93,7 @@ internal sealed unsafe class OutputWindowHost : IDisposable
         {
             var hInstance = (HINSTANCE)(void*)GetModuleHandleW(null);
 
-            // Pode ter sobrado registro de um reload anterior do plugin; remover falha sem problema.
+            // A registration may have survived a previous plugin reload; removal failing is fine.
             _ = UnregisterClassW(clsName, hInstance);
 
             var wc = new WNDCLASSEXW
@@ -133,7 +133,7 @@ internal sealed unsafe class OutputWindowHost : IDisposable
                 hwnd = (nint)window.Value;
                 ready = true;
 
-                // Sem roubar o foco do jogo.
+                // Without stealing focus from the game.
                 _ = ShowWindow(window, SW.SW_SHOWNOACTIVATE);
 
                 MSG msg;
@@ -162,7 +162,7 @@ internal sealed unsafe class OutputWindowHost : IDisposable
                 PostQuitMessage(0);
                 return 0;
 
-            // Sem fundo: o swapchain cobre a área cliente inteira; evita flicker no resize.
+            // No background: the swapchain covers the whole client area; avoids resize flicker.
             case WM.WM_ERASEBKGND:
                 return 1;
 
@@ -170,14 +170,14 @@ internal sealed unsafe class OutputWindowHost : IDisposable
             {
                 var style = (borderless ? BorderlessStyle : BorderedStyle) | WS.WS_VISIBLE;
                 _ = SetWindowLongPtrW(window, GWL.GWL_STYLE, (nint)style);
-                // SWP_FRAMECHANGED força o Windows a recalcular a moldura com o estilo novo.
+                // SWP_FRAMECHANGED forces Windows to recompute the frame with the new style.
                 _ = SetWindowPos(window, HWND.NULL, 0, 0, 0, 0,
                     SWP.SWP_NOMOVE | SWP.SWP_NOSIZE | SWP.SWP_NOZORDER | SWP.SWP_NOACTIVATE | SWP.SWP_FRAMECHANGED);
                 return 0;
             }
 
-            // Sem borda não há barra de título: o corpo da janela vira "alça" de arrastar
-            // e uma faixa de 8px nas bordas vira alça de redimensionar.
+            // Borderless has no title bar: the window body becomes the drag handle and an
+            // 8px strip along the edges becomes the resize handle.
             case WM.WM_NCHITTEST when borderless:
             {
                 var x = (int)(short)((nuint)lParam.Value & 0xFFFF);
