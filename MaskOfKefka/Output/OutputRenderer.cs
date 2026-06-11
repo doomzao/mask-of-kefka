@@ -59,6 +59,11 @@ internal sealed unsafe class OutputRenderer : IDisposable
     private uint swapWidth;
     private uint swapHeight;
 
+    // With tearing support, Present never waits for vblank. Critical: we present inside
+    // the game's frame, so any wait here is added directly to the game's frame time
+    // (a vblank wait would cut the game's fps in half under vsync).
+    private bool allowTearing;
+
     public bool Initialized { get; private set; }
 
     public void Initialize(ID3D11Device* gameDevice, ID3D11DeviceContext* gameContext, HWND windowHandle)
@@ -140,7 +145,7 @@ internal sealed unsafe class OutputRenderer : IDisposable
             ID3D11RenderTargetView* nullRtv = null;
             context->OMSetRenderTargets(1, &nullRtv, null);
 
-            ThrowIfFailed(swapChain->Present(0, 0), "Present");
+            ThrowIfFailed(swapChain->Present(0, allowTearing ? DXGI.DXGI_PRESENT_ALLOW_TEARING : 0), "Present");
         }
         finally
         {
@@ -261,6 +266,15 @@ internal sealed unsafe class OutputRenderer : IDisposable
             ThrowIfFailed(dxgiDevice->GetAdapter(&adapter), "GetAdapter");
             ThrowIfFailed(adapter->GetParent(__uuidof<IDXGIFactory2>(), (void**)&factory), "GetParent IDXGIFactory2");
 
+            IDXGIFactory5* factory5 = null;
+            if (SUCCEEDED(factory->QueryInterface(__uuidof<IDXGIFactory5>(), (void**)&factory5)))
+            {
+                BOOL tearingSupport = BOOL.FALSE;
+                if (SUCCEEDED(factory5->CheckFeatureSupport(DXGI_FEATURE.DXGI_FEATURE_PRESENT_ALLOW_TEARING, &tearingSupport, (uint)sizeof(BOOL))))
+                    allowTearing = tearingSupport != BOOL.FALSE;
+                factory5->Release();
+            }
+
             var desc = new DXGI_SWAP_CHAIN_DESC1
             {
                 Width = 0, // use the current client area size
@@ -272,6 +286,7 @@ internal sealed unsafe class OutputRenderer : IDisposable
                 SwapEffect = DXGI_SWAP_EFFECT.DXGI_SWAP_EFFECT_FLIP_DISCARD,
                 Scaling = DXGI_SCALING.DXGI_SCALING_STRETCH,
                 AlphaMode = DXGI_ALPHA_MODE.DXGI_ALPHA_MODE_IGNORE,
+                Flags = allowTearing ? (uint)DXGI_SWAP_CHAIN_FLAG.DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0,
             };
 
             fixed (IDXGISwapChain1** sc = &swapChain)
@@ -291,7 +306,9 @@ internal sealed unsafe class OutputRenderer : IDisposable
     private void ResizeSwapChain(uint width, uint height)
     {
         Release(ref rtv);
-        ThrowIfFailed(swapChain->ResizeBuffers(0, width, height, DXGI_FORMAT.DXGI_FORMAT_UNKNOWN, 0), "ResizeBuffers");
+        ThrowIfFailed(
+            swapChain->ResizeBuffers(0, width, height, DXGI_FORMAT.DXGI_FORMAT_UNKNOWN, allowTearing ? (uint)DXGI_SWAP_CHAIN_FLAG.DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0),
+            "ResizeBuffers");
 
         ID3D11Texture2D* backBuffer = null;
         ThrowIfFailed(swapChain->GetBuffer(0, __uuidof<ID3D11Texture2D>(), (void**)&backBuffer), "GetBuffer");
